@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Multiplication Adventure</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Nunito:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 800px;
+            min-height: 600px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            padding: 40px;
+            text-align: center;
+            min-height: 600px;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 3rem;
+            color: #4a5568;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2rem;
+            color: #4a5568;
+            margin-bottom: 20px;
+        }
+
+        .avatar-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .avatar-option {
+            background: #f7fafc;
+            border: 3px solid transparent;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 4rem;
+        }
+
+        .avatar-option:hover {
+            transform: scale(1.05);
+            border-color: #667eea;
+        }
+
+        .avatar-option.selected {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        input[type="text"] {
+            font-size: 1.2rem;
+            padding: 15px 20px;
+            border: 3px solid #e2e8f0;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 300px;
+            margin: 20px 0;
+            text-align: center;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Nunito', sans-serif;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .level-info {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .player-avatar {
+            font-size: 2.5rem;
+            background: rgba(255,255,255,0.2);
+            padding: 10px;
+            border-radius: 50%;
+        }
+
+        .question-container {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+        }
+
+        .question {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 30px;
+        }
+
+        .answer-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .answer-btn {
+            background: white;
+            border: 3px solid #e2e8f0;
+            padding: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #2d3748;
+        }
+
+        .answer-btn:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .answer-btn.correct {
+            background: #48bb78;
+            color: white;
+            border-color: #38a169;
+        }
+
+        .answer-btn.incorrect {
+            background: #f56565;
+            color: white;
+            border-color: #e53e3e;
+        }
+
+        .celebration {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin: 30px 0;
+            animation: celebrate 0.5s ease-in-out;
+        }
+
+        @keyframes celebrate {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .celebration h3 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .stars {
+            font-size: 3rem;
+            margin: 20px 0;
+            animation: twinkle 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .incorrect-feedback {
+            background: #fed7d7;
+            border: 2px solid #f56565;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            color: #742a2a;
+        }
+
+        .visual-help {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .dot-group {
+            display: grid;
+            gap: 5px;
+            margin: 10px;
+        }
+
+        .dot {
+            width: 15px;
+            height: 15px;
+            background: #667eea;
+            border-radius: 50%;
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .level-complete {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin: 30px 0;
+        }
+
+        .game-complete {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin: 30px 0;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                width: 95%;
+                margin: 10px;
+            }
+
+            .screen {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .question {
+                font-size: 2rem;
+            }
+
+            .level-info {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <!-- Setup Screen -->
+    <div class="screen active" id="setupScreen">
+        <h1>🎯 Math Multiplication Adventure</h1>
+        <p style="font-size: 1.2rem; color: #718096; margin-bottom: 30px;">
+            Welcome to the most fun way to practice multiplication! Choose your avatar and enter your name to begin your adventure.
+        </p>
+
+        <div>
+            <label style="font-size: 1.3rem; font-weight: 600; color: #4a5568;">Enter Your Name:</label>
+            <br>
+            <input type="text" id="playerName" placeholder="Your awesome name here!" maxlength="20">
+        </div>
+
+
+
+        <button class="btn" id="startGameBtn">Start Adventure! 🚀</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div class="screen" id="gameScreen">
+        <div class="level-info">
+            <div class="player-info">
+                <div>
+                    <div style="font-size: 1.2rem; font-weight: 600;" id="gamePlayerName">Player</div>
+                    <div style="font-size: 1rem; opacity: 0.9;">Level <span id="currentLevel">1</span></div>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 1rem; opacity: 0.9;">Progress</div>
+                <div style="font-size: 1.2rem; font-weight: 600;"><span id="correctAnswers">0</span>/5</div>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+
+        <div class="question-container">
+            <div class="question" id="questionText">2 × 3 = ?</div>
+            <div class="answer-options" id="answerOptions">
+                <!-- Answer buttons will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration Screen -->
+    <div class="screen" id="celebrationScreen">
+        <div class="celebration">
+            <h3>🎉 Awesome! 🎉</h3>
+            <div class="stars">⭐ ⭐ ⭐</div>
+            <p style="font-size: 1.3rem;">You got it right!</p>
+        </div>
+        <button class="btn" id="nextQuestionBtn">Next Question ➡️</button>
+    </div>
+
+    <!-- Incorrect Answer Screen -->
+    <div class="screen" id="incorrectScreen">
+        <div class="incorrect-feedback">
+            <h3 style="color: #742a2a; margin-bottom: 20px;">Oops! Let's learn together! 🤔</h3>
+            <p style="font-size: 1.2rem; margin-bottom: 20px;" id="correctAnswerText">The correct answer is 6</p>
+            <div class="visual-help" id="visualHelp">
+                <!-- Visual representation will be generated here -->
+            </div>
+            <p style="font-size: 1.1rem; margin-top: 20px;">Don't worry! You'll get the next one! 💪</p>
+        </div>
+        <button class="btn" id="tryAgainBtn">Try Next Question! 🔄</button>
+    </div>
+
+    <!-- Level Complete Screen -->
+    <div class="screen" id="levelCompleteScreen">
+        <div class="level-complete">
+            <h2>🏆 Level Complete! 🏆</h2>
+            <div style="font-size: 4rem; margin: 30px 0;">🎊</div>
+            <p style="font-size: 1.3rem; margin-bottom: 20px;">Amazing work! You've mastered this level!</p>
+            <p style="font-size: 1.1rem; opacity: 0.9;" id="levelCompleteText">Ready for the next challenge?</p>
+        </div>
+        <button class="btn" id="nextLevelBtn">Next Level! 🚀</button>
+    </div>
+
+    <!-- Game Complete Screen -->
+    <div class="screen" id="gameCompleteScreen">
+        <div class="game-complete">
+            <h2>🌟 Congratulations! 🌟</h2>
+            <div style="font-size: 5rem; margin: 30px 0;">🏆</div>
+            <p style="font-size: 1.5rem; margin-bottom: 20px;">You've completed all 10 levels!</p>
+            <p style="font-size: 1.2rem; opacity: 0.9;">You're now a Multiplication Master!</p>
+        </div>
+        <button class="btn" id="playAgainBtn">Play Again! 🔄</button>
+    </div>
+</div>
+
+<script>
+    class MultiplicationGame {
+        constructor() {
+            this.playerName = '';
+            this.currentLevel = 1;
+            this.correctAnswers = 0;
+            this.currentQuestion = {};
+            this.maxLevel = 10;
+
+            this.initializeEventListeners();
+            this.setupInitialState();
+        }
+
+        setupInitialState() {
+            // Set initial button state
+            const startBtn = document.getElementById('startGameBtn');
+            startBtn.disabled = true;
+            startBtn.style.opacity = '0.6';
+            startBtn.style.cursor = 'not-allowed';
+        }
+
+        initializeEventListeners() {
+            // Setup screen
+            const nameInput = document.getElementById('playerName');
+            nameInput.addEventListener('input', this.validateSetup.bind(this));
+            nameInput.addEventListener('keyup', this.validateSetup.bind(this));
+            document.getElementById('startGameBtn').addEventListener('click', this.startGame.bind(this));
+
+            // Game buttons
+            document.getElementById('nextQuestionBtn').addEventListener('click', this.nextQuestion.bind(this));
+            document.getElementById('tryAgainBtn').addEventListener('click', this.nextQuestion.bind(this));
+            document.getElementById('nextLevelBtn').addEventListener('click', this.nextLevel.bind(this));
+            document.getElementById('playAgainBtn').addEventListener('click', this.resetGame.bind(this));
+        }
+
+        validateSetup() {
+            const name = document.getElementById('playerName').value.trim();
+            const startBtn = document.getElementById('startGameBtn');
+            if (name.length > 0) {
+                startBtn.disabled = false;
+                startBtn.style.opacity = '1';
+                startBtn.style.cursor = 'pointer';
+            } else {
+                startBtn.disabled = true;
+                startBtn.style.opacity = '0.6';
+                startBtn.style.cursor = 'not-allowed';
+            }
+        }
+
+        startGame() {
+            const name = document.getElementById('playerName').value.trim();
+            if (!name) {
+                alert('Please enter your name first!');
+                return;
+            }
+            this.playerName = name;
+            this.currentLevel = 1;
+            this.correctAnswers = 0;
+            document.getElementById('gamePlayerName').textContent = this.playerName;
+            document.getElementById('currentLevel').textContent = this.currentLevel;
+            document.getElementById('correctAnswers').textContent = this.correctAnswers;
+            this.updateProgressBar();
+            this.showScreen('gameScreen');
+            this.generateQuestion();
+        }
+
+        generateQuestion() {
+            // Each item is a level when you reach the max level, it does the last level over and over again
+            const levelRange = [
+                { num1: { min: 0, max : 5 }, num2: { min: 0, max : 5 }},
+                { num1: { min: 0, max : 10 }, num2: { min: 0, max : 5 }},
+                { num1: { min: 0, max : 15 }, num2: { min: 0, max : 5 }},
+                { num1: { min: 0, max : 20 }, num2: { min: 0, max : 5 }},
+                { num1: { min: 0, max : 10 }, num2: { min: 0, max : 10 }},
+                { num1: { min: 0, max : 10 }, num2: { min: 0, max : 15 }},
+                { num1: { min: 0, max : 15 }, num2: { min: 0, max : 15 }},
+                { num1: { min: 0, max : 20 }, num2: { min: 0, max : 20 }},
+                { num1: { min: 5, max : 10 }, num2: { min: 5, max : 10 }},
+                { num1: { min: 5, max : 15 }, num2: { min: 5, max : 15 }},
+                { num1: { min: 5, max : 20 }, num2: { min: 5, max : 20 }},
+                { num1: { min: 10, max : 15 }, num2: { min: 10, max : 15 }},
+                { num1: { min: 10, max : 20 }, num2: { min: 10, max : 20 }},
+                { num1: { min: 15, max : 20 }, num2: { min: 15, max : 20 }},
+            ]
+
+            const level = this.currentLevel - 1 < levelRange.length ? levelRange[this.currentLevel - 1] : levelRange[levelRange.length - 1]
+            const num1 = Math.floor(Math.random() * (level.num1.max - level.num1.min + 1)) + level.num1.min;
+            const num2 = Math.floor(Math.random() * (level.num2.max - level.num2.min + 1)) + level.num1.min;
+            const correctAnswer = num1 * num2;
+
+            this.currentQuestion = { num1, num2, correctAnswer };
+
+            // Display question
+            document.getElementById('questionText').textContent = `${num1} × ${num2} = ?`;
+
+            // Generate answer options
+            this.generateAnswerOptions(correctAnswer);
+
+            // Update UI
+            document.getElementById('currentLevel').textContent = this.currentLevel;
+            document.getElementById('correctAnswers').textContent = this.correctAnswers;
+            this.updateProgressBar();
+        }
+
+        generateAnswerOptions(correctAnswer) {
+            const options = [correctAnswer];
+
+            // Generate 3 incorrect options
+            while (options.length < 4) {
+                let wrongAnswer;
+                if (Math.random() < 0.5) {
+                    // Close wrong answers (±1 to ±5)
+                    wrongAnswer = correctAnswer + (Math.floor(Math.random() * 10) - 5);
+                } else {
+                    // Random wrong answers
+                    wrongAnswer = Math.floor(Math.random() * (correctAnswer * 2)) + 1;
+                }
+
+                if (wrongAnswer > 0 && !options.includes(wrongAnswer)) {
+                    options.push(wrongAnswer);
+                }
+            }
+
+            // Shuffle options
+            for (let i = options.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [options[i], options[j]] = [options[j], options[i]];
+            }
+
+            // Create answer buttons
+            const container = document.getElementById('answerOptions');
+            container.innerHTML = '';
+
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'answer-btn';
+                button.textContent = option;
+                button.addEventListener('click', () => this.checkAnswer(option, button));
+                container.appendChild(button);
+            });
+        }
+
+        checkAnswer(selectedAnswer, buttonElement) {
+            const isCorrect = selectedAnswer === this.currentQuestion.correctAnswer;
+
+            // Disable all buttons
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.style.pointerEvents = 'none';
+                if (btn.textContent == this.currentQuestion.correctAnswer) {
+                    btn.classList.add('correct');
+                } else if (btn === buttonElement && !isCorrect) {
+                    btn.classList.add('incorrect');
+                }
+            });
+
+            setTimeout(() => {
+                if (isCorrect) {
+                    this.correctAnswers++;
+                    this.updateProgressBar();
+
+                    if (this.correctAnswers >= 5) {
+                        this.completeLevel();
+                    } else {
+                        this.showScreen('celebrationScreen');
+                    }
+                } else {
+                    this.showIncorrectFeedback();
+                }
+            }, 1500);
+        }
+
+        showIncorrectFeedback() {
+            const { num1, num2, correctAnswer } = this.currentQuestion;
+            document.getElementById('correctAnswerText').textContent =
+                `${num1} × ${num2} = ${correctAnswer}`;
+
+            this.createVisualHelp(num1, num2);
+            this.showScreen('incorrectScreen');
+        }
+
+        createVisualHelp(num1, num2) {
+            const container = document.getElementById('visualHelp');
+            container.innerHTML = '';
+
+            // Limit visual help to reasonable numbers
+            if (num1 <= 10 && num2 <= 10) {
+                for (let i = 0; i < num1; i++) {
+                    const group = document.createElement('div');
+                    group.className = 'dot-group';
+                    group.style.gridTemplateColumns = `repeat(${num2}, 1fr)`;
+
+                    for (let j = 0; j < num2; j++) {
+                        const dot = document.createElement('div');
+                        dot.className = 'dot';
+                        group.appendChild(dot);
+                    }
+
+                    container.appendChild(group);
+                }
+
+                const explanation = document.createElement('p');
+                explanation.style.marginTop = '20px';
+                explanation.style.fontSize = '1.1rem';
+                explanation.textContent = `${num1} groups of ${num2} dots = ${num1 * num2} dots total`;
+                container.appendChild(explanation);
+            } else {
+                const explanation = document.createElement('p');
+                explanation.style.fontSize = '1.2rem';
+                explanation.textContent = `Think of it as: ${num1} groups of ${num2} = ${num1 * num2}`;
+                container.appendChild(explanation);
+            }
+        }
+
+        nextQuestion() {
+            this.generateQuestion();
+            this.showScreen('gameScreen');
+        }
+
+        completeLevel() {
+            if (this.currentLevel >= this.maxLevel) {
+                this.showScreen('gameCompleteScreen');
+            } else {
+                document.getElementById('levelCompleteText').textContent =
+                    `Get ready for Level ${this.currentLevel + 1}! The numbers will get a bit bigger.`;
+                this.showScreen('levelCompleteScreen');
+            }
+        }
+
+        nextLevel() {
+            this.currentLevel++;
+            this.correctAnswers = 0;
+            this.updateProgressBar();
+            this.generateQuestion();
+            this.showScreen('gameScreen');
+        }
+
+        updateProgressBar() {
+            const progress = (this.correctAnswers / 5) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+        }
+
+        resetGame() {
+            this.currentLevel = 1;
+            this.correctAnswers = 0;
+            this.playerName = '';
+
+            document.getElementById('playerName').value = '';
+            document.getElementById('startGameBtn').disabled = true;
+
+            this.showScreen('setupScreen');
+        }
+
+        showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+    }
+
+    // Initialize the game when the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        new MultiplicationGame();
+    });
+</script>
+</body>
+</html>

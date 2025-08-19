@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lunch Count Board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+        /* Add these styles to your existing CSS */
+        :root {
+            --student-number-size: 1.125rem;  /* 18px base size */
+            --student-number-padding: 0.375rem 0.625rem;  /* 6px 10px base padding */
+        }
+
+        @media (min-width: 1920px) {
+            :root {
+                --student-number-size: 1.5rem;      /* 24px for large screens */
+                --student-number-padding: 0.75rem 1rem;  /* 12px 16px for large screens */
+            }
+
+            .text-3xl {
+                font-size: 2.5rem !important;  /* Larger title for big screens */
+            }
+
+            .text-lg {
+                font-size: 1.25rem !important;
+            }
+
+            .drop-zone {
+                min-height: 160px !important;
+            }
+        }
+
+        .student-number {
+            font-size: var(--student-number-size);
+            padding: var(--student-number-padding);
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            position: relative;
+        }
+
+        .dragging {
+            position: fixed;
+            z-index: 1000;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .student-number-placeholder {
+            display: inline-block;
+            opacity: 0.3;
+            border: 2px dashed rgba(0,0,0,0.2);
+        }
+
+        /* Improve touch targets on touch screens */
+        @media (hover: none) and (pointer: coarse) {
+            .student-number {
+                padding: 0.75rem 1rem;
+            }
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .draggable {
+            cursor: grab;
+            transition: transform 0.2s ease;
+        }
+
+        .draggable:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+
+        .drop-zone {
+            min-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.drag-over {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.02);
+        }
+
+        .student-number {
+            font-weight: bold;
+            font-size: 18px;
+            color: black;
+            margin: 4px;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 6px;
+            border: 2px solid rgba(0,0,0,0.3);
+        }
+
+        .lunch-title {
+            background: transparent;
+            border: 2px dashed rgba(0,0,0,0.5);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            color: black;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .lunch-title:focus {
+            border-color: white;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .lunch-title::placeholder {
+            color: rgba(0,0,0,0.7);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .bounce-animation {
+            animation: bounce 0.6s ease;
+        }
+    </style>
+</head>
+<body class="h-screen p-2 flex flex-col" style="background-color: #f8f9fa; background-image:
+    linear-gradient(to bottom, transparent 0px, transparent 23px, #e3f2fd 24px, #e3f2fd 25px, transparent 26px),
+    linear-gradient(to right, #ffcdd2 0px, #ffcdd2 80px, transparent 81px);
+background-size: 100% 25px, 100% 100%;">
+<!-- Date Header -->
+<div class="text-center mb-2">
+    <input type="text" id="dateInput" class="text-2xl font-bold text-black text-center bg-transparent border-2 border-dashed border-gray-400 rounded-lg px-3 py-1 outline-none focus:border-black transition-all" placeholder="Monday, January 15th, 2024" value="Monday, January 15th, 2024">
+</div>
+
+<!-- Header -->
+<div class="text-center mb-3">
+    <h1 class="text-3xl font-bold text-black mb-1">Lunch Count Board</h1>
+    <p class="text-lg text-black opacity-90">Drag your number to your lunch choice!</p>
+</div>
+
+<!-- Student Numbers Section -->
+<div class="bg-white bg-opacity-20 rounded-2xl p-3 mb-3 backdrop-blur-sm">
+    <div class="flex items-center justify-between mb-2">
+        <h2 class="text-xl font-bold text-black flex items-center">
+            👥 Student Numbers
+        </h2>
+        <button id="resetBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm">
+            🔄 Reset All
+        </button>
+    </div>
+    <div id="studentNumbers" class="flex flex-wrap justify-center gap-1 p-2 bg-white bg-opacity-10 rounded-xl min-h-[80px]">
+        <!-- Student number bubbles will be generated here -->
+    </div>
+</div>
+
+<!-- Lunch Options Grid -->
+<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
+    <!-- Lunch Option 1 -->
+    <div class="lunch-section bg-pink-700 bg-opacity-90 rounded-2xl p-3 shadow-xl" data-lunch="1">
+        <div class="text-center mb-2">
+
+            <input type="text" class="lunch-title w-full" placeholder="Lunch Option 1" value="School Lunch">
+        </div>
+        <div class="drop-zone bg-white bg-opacity-20 rounded-xl p-2 flex flex-wrap justify-center items-center" data-zone="lunch1">
+            <p class="text-black text-sm opacity-70 w-full text-center">Drop numbers here</p>
+        </div>
+        <div class="text-center mt-2">
+            <span class="count-display bg-white bg-opacity-30 text-black font-bold text-lg px-3 py-1 rounded-full">Count: <span class="count">0</span></span>
+        </div>
+    </div>
+
+    <!-- Lunch Option 2 -->
+    <div class="lunch-section bg-cyan-400 bg-opacity-90 rounded-2xl p-3 shadow-xl" data-lunch="2">
+        <div class="text-center mb-2">
+
+            <input type="text" class="lunch-title w-full" placeholder="Lunch Option 2" value="Packed Lunch">
+        </div>
+        <div class="drop-zone bg-white bg-opacity-20 rounded-xl p-2 flex flex-wrap justify-center items-center" data-zone="lunch2">
+            <p class="text-black text-sm opacity-70 w-full text-center">Drop numbers here</p>
+        </div>
+        <div class="text-center mt-2">
+            <span class="count-display bg-white bg-opacity-30 text-black font-bold text-lg px-3 py-1 rounded-full">Count: <span class="count">0</span></span>
+        </div>
+    </div>
+
+    <!-- Lunch Option 3 -->
+    <div class="lunch-section bg-yellow-400 bg-opacity-90 rounded-2xl p-3 shadow-xl" data-lunch="3">
+        <div class="text-center mb-2">
+
+            <input type="text" class="lunch-title w-full" placeholder="Lunch Option 3" value="No Lunch">
+        </div>
+        <div class="drop-zone bg-white bg-opacity-20 rounded-xl p-2 flex flex-wrap justify-center items-center" data-zone="lunch3">
+            <p class="text-black text-sm opacity-70 w-full text-center">Drop numbers here</p>
+        </div>
+        <div class="text-center mt-2">
+            <span class="count-display bg-white bg-opacity-30 text-black font-bold text-lg px-3 py-1 rounded-full">Count: <span class="count">0</span></span>
+        </div>
+    </div>
+
+    <!-- Lunch Option 4 -->
+    <div class="lunch-section bg-fuchsia-500 bg-opacity-90 rounded-2xl p-3 shadow-xl" data-lunch="4">
+        <div class="text-center mb-2">
+
+            <input type="text" class="lunch-title w-full" placeholder="Lunch Option 4" value="Special Diet">
+        </div>
+        <div class="drop-zone bg-white bg-opacity-20 rounded-xl p-2 flex flex-wrap justify-center items-center" data-zone="lunch4">
+            <p class="text-black text-sm opacity-70 w-full text-center">Drop numbers here</p>
+        </div>
+        <div class="text-center mt-2">
+            <span class="count-display bg-white bg-opacity-30 text-black font-bold text-lg px-3 py-1 rounded-full">Count: <span class="count">0</span></span>
+        </div>
+    </div>
+</div>
+
+<!-- Fun School Doodles -->
+<div class="fixed top-4 left-4 text-4xl opacity-30 pointer-events-none">📚</div>
+<div class="fixed top-20 right-8 text-3xl opacity-30 pointer-events-none">✏️</div>
+<div class="fixed bottom-8 left-8 text-3xl opacity-30 pointer-events-none">🎒</div>
+<div class="fixed bottom-4 right-4 text-4xl opacity-30 pointer-events-none">🌟</div>
+
+<script>
+    // Generate student numbers
+    function createStudentBubbles() {
+        const container = document.getElementById('studentNumbers');
+
+        for (let i = 1; i <= 19; i++) {
+            const number = document.createElement('div');
+            number.className = 'student-number draggable';
+            number.textContent = i;
+            number.draggable = true;
+            number.id = `student-${i}`;
+            number.addEventListener('dragstart', handleDragStart);
+            number.addEventListener('dragend', handleDragEnd);
+            container.appendChild(number);
+        }
+    }
+
+    // Drag and drop functionality
+    let draggedElement = null;
+
+    function handleDragStart(e) {
+        draggedElement = e.target;
+        e.target.style.opacity = '0.5';
+    }
+
+    function handleDragEnd(e) {
+        e.target.style.opacity = '1';
+        draggedElement = null;
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+    }
+
+    function handleDragEnter(e) {
+        if (e.target.classList.contains('drop-zone')) {
+            e.target.classList.add('drag-over');
+        }
+    }
+
+    function handleDragLeave(e) {
+        if (e.target.classList.contains('drop-zone')) {
+            e.target.classList.remove('drag-over');
+        }
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        const dropZone = e.target.closest('.drop-zone');
+
+        if (dropZone && draggedElement) {
+            dropZone.classList.remove('drag-over');
+
+            // Remove the placeholder text if it exists
+            const placeholder = dropZone.querySelector('p');
+            if (placeholder) {
+                placeholder.style.display = 'none';
+            }
+
+            // Add the dragged element to the drop zone
+            dropZone.appendChild(draggedElement);
+            draggedElement.classList.add('bounce-animation');
+
+            // Remove animation class after animation completes
+            setTimeout(() => {
+                draggedElement.classList.remove('bounce-animation');
+            }, 600);
+
+            updateCounts();
+        }
+    }
+
+    // Update count displays
+    function updateCounts() {
+        const dropZones = document.querySelectorAll('.drop-zone');
+        dropZones.forEach(zone => {
+            const count = zone.querySelectorAll('.student-number').length;
+            const countDisplay = zone.closest('.lunch-section').querySelector('.count');
+            countDisplay.textContent = count;
+
+            // Show/hide placeholder text
+            const placeholder = zone.querySelector('p');
+            if (placeholder) {
+                placeholder.style.display = count > 0 ? 'none' : 'block';
+            }
+        });
+    }
+
+    // Reset functionality
+    function resetBoard() {
+        const studentNumbers = document.getElementById('studentNumbers');
+        const allNumbers = document.querySelectorAll('.student-number');
+
+        allNumbers.forEach(number => {
+            number.classList.add('bounce-animation');
+            studentNumbers.appendChild(number);
+        });
+
+        // Show all placeholder texts
+        const placeholders = document.querySelectorAll('.drop-zone p');
+        placeholders.forEach(p => p.style.display = 'block');
+
+        updateCounts();
+
+        // Remove animation classes
+        setTimeout(() => {
+            allNumbers.forEach(number => {
+                number.classList.remove('bounce-animation');
+            });
+        }, 600);
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        createStudentBubbles();
+        initDragAndTouch();
+
+        // Add drop zone event listeners
+        const dropZones = document.querySelectorAll('.drop-zone');
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', handleDragOver);
+            zone.addEventListener('dragenter', handleDragEnter);
+            zone.addEventListener('dragleave', handleDragLeave);
+            zone.addEventListener('drop', handleDrop);
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', resetBoard);
+
+        // Initialize counts
+        // updateCounts();
+        // Add drop zone to student numbers area
+        // const studentNumbers = document.getElementById('studentNumbers');
+        // studentNumbers.addEventListener('dragover', handleDragOver);
+        // studentNumbers.addEventListener('drop', handleDrop);
+        //
+        // // Reset button
+        // document.getElementById('resetBtn').addEventListener('click', resetBoard);
+        //
+        // // Initialize counts
+        updateCounts();
+    });
+
+    // Touch and mouse tracking variables
+    let initialX = 0;
+    let initialY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let placeholder = null;
+
+    function initDragAndTouch() {
+        const draggables = document.querySelectorAll('.student-number');
+
+        draggables.forEach(draggable => {
+            // Touch events
+            draggable.addEventListener('touchstart', handleTouchStart, { passive: false });
+            draggable.addEventListener('touchend', handleTouchEnd);
+
+            // Mouse events
+            draggable.addEventListener('mousedown', handleMouseDown);
+            draggable.addEventListener('dragstart', (e) => e.preventDefault());
+        });
+
+        // Global move events
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    function handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        startDrag(e.target, touch.clientX, touch.clientY);
+    }
+
+    function handleMouseDown(e) {
+        startDrag(e.target, e.clientX, e.clientY);
+    }
+
+    function startDrag(element, clientX, clientY) {
+        draggedElement = element.closest('.student-number');
+        if (!draggedElement) return;
+
+        const rect = draggedElement.getBoundingClientRect();
+        initialX = clientX - rect.left;
+        initialY = clientY - rect.top;
+
+        // Create placeholder
+        placeholder = draggedElement.cloneNode(true);
+        placeholder.classList.add('student-number-placeholder');
+        placeholder.classList.remove('draggable');
+        draggedElement.parentNode.insertBefore(placeholder, draggedElement);
+
+        // Set up dragged element
+        draggedElement.classList.add('dragging');
+        moveElement(clientX, clientY);
+    }
+
+    function handleTouchMove(e) {
+        if (!draggedElement) return;
+        e.preventDefault();
+
+        const touch = e.touches[0];
+        moveElement(touch.clientX, touch.clientY);
+        checkDropZones(touch.clientX, touch.clientY);
+    }
+
+    function handleMouseMove(e) {
+        if (!draggedElement) return;
+
+        moveElement(e.clientX, e.clientY);
+        checkDropZones(e.clientX, e.clientY);
+    }
+
+    function moveElement(clientX, clientY) {
+        currentX = clientX - initialX;
+        currentY = clientY - initialY;
+
+        draggedElement.style.left = `${currentX}px`;
+        draggedElement.style.top = `${currentY}px`;
+    }
+
+    function checkDropZones(clientX, clientY) {
+        const dropZones = document.querySelectorAll('.drop-zone');
+        dropZones.forEach(zone => {
+            const rect = zone.getBoundingClientRect();
+            const isOver = clientX >= rect.left &&
+                clientX <= rect.right &&
+                clientY >= rect.top &&
+                clientY <= rect.bottom;
+
+            zone.classList.toggle('drag-over', isOver);
+        });
+    }
+
+    function handleTouchEnd(e) {
+        if (!draggedElement) return;
+
+        const touch = e.changedTouches[0];
+        finishDrag(touch.clientX, touch.clientY);
+    }
+
+    function handleMouseUp(e) {
+        if (!draggedElement) return;
+
+        finishDrag(e.clientX, e.clientY);
+    }
+
+    function finishDrag(clientX, clientY) {
+        const dropZones = document.querySelectorAll('.drop-zone');
+        let dropped = false;
+
+        dropZones.forEach(zone => {
+            const rect = zone.getBoundingClientRect();
+            if (clientX >= rect.left &&
+                clientX <= rect.right &&
+                clientY >= rect.top &&
+                clientY <= rect.bottom) {
+
+                // Remove placeholder
+                if (placeholder) placeholder.remove();
+
+                // Move to new drop zone
+                zone.appendChild(draggedElement);
+                dropped = true;
+
+                // Add animation
+                draggedElement.classList.add('bounce-animation');
+                setTimeout(() => {
+                    draggedElement.classList.remove('bounce-animation');
+                }, 600);
+            }
+        });
+
+        if (!dropped && placeholder) {
+            // Return to original position
+            placeholder.parentNode.insertBefore(draggedElement, placeholder);
+            placeholder.remove();
+        }
+
+        // Cleanup
+        draggedElement.classList.remove('dragging');
+        draggedElement.style.position = '';
+        draggedElement.style.left = '';
+        draggedElement.style.top = '';
+        draggedElement.style.zIndex = '';
+        draggedElement.style.opacity = '';
+
+        draggedElement = null;
+        placeholder = null;
+
+        // Remove drag-over class from all drop zones
+        dropZones.forEach(zone => zone.classList.remove('drag-over'));
+
+        updateCounts();
+    }
+
+</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9714d8ecb60460f1',t:'MTc1NTU1NjEzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

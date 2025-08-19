@@ -202,8 +202,6 @@ background-size: 100% 25px, 100% 100%;">
     ]
     document.getElementById("date").textContent = `${day}, ${month} ${date}, ${year}`;
 
-
-
     // Generate student numbers
     function createStudentBubbles() {
         const container = document.getElementById('studentNumbers');
@@ -217,7 +215,10 @@ background-size: 100% 25px, 100% 100%;">
             // Drag event listeners
             number.addEventListener('dragstart', handleDragStart);
             number.addEventListener('dragend', handleDragEnd);
-
+            // Touch Events
+            number.addEventListener('touchstart', handleTouchStart, { passive: false });
+            number.addEventListener('touchmove', handleTouchMove, { passive: false });
+            number.addEventListener('touchend', handleTouchEnd, { passive: false });
             container.appendChild(number);
         }
     }
@@ -275,6 +276,67 @@ background-size: 100% 25px, 100% 100%;">
 
             updateCounts();
         }
+    }
+
+    let touchDraggedElement = null;
+    let touchOffset = { x: 0, y: 0 };
+    let initialPosition = { x: 0, y: 0 };
+
+    function handleTouchStart(e) {
+        touchDraggedElement = e.target;
+        const rect = touchDraggedElement.getBoundingClientRect();
+        const touch = e.touches[0];
+        initialPosition = { x: touch.clientX, y: touch.clientY };
+
+        touchOffset.x = touch.clientX - rect.left;
+        touchOffset.y = touch.clientY - rect.top;
+        touchDraggedElement.style.position = 'absolute';
+        touchDraggedElement.style.zIndex = '1000';
+        moveAt(touch.clientX, touch.clientY);
+        document.body.appendChild(touchDraggedElement);
+        e.target.style.opacity = '0.5';
+    }
+
+    function moveAt(x, y) {
+        touchDraggedElement.style.left = (x - touchOffset.x) + 'px';
+        touchDraggedElement.style.top = (y - touchOffset.y) + 'px';
+    }
+
+    function handleTouchMove(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        moveAt(touch.clientX, touch.clientY);
+    }
+
+    function handleTouchEnd(e) {
+        e.target.style.opacity = '1';
+        const touch = e.changedTouches[0];
+        const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+        const dropZone = elements.find((x) => x.classList.contains('drop-zone'));
+        console.log(dropZone?.closest('.drop-zone'));
+        // console.log(elements);
+        // const dropZone = elem?.closest('.drop-zone') || elem?.closest('#studentNumbers');
+        console.log(touchDraggedElement);
+        console.log(dropZone)
+        if (dropZone && touchDraggedElement) {
+            // Remove placeholder if exists
+            const placeholder = dropZone.querySelector('p');
+            if (placeholder) placeholder.style.display = 'none';
+            dropZone.appendChild(touchDraggedElement);
+            touchDraggedElement.classList.add('bounce-animation');
+            setTimeout(() => {
+                touchDraggedElement?.classList?.remove('bounce-animation');
+            }, 600);
+            updateCounts();
+        } else {
+            document.getElementById('studentNumbers').appendChild(touchDraggedElement);
+        }
+        // Reset styles
+        touchDraggedElement.style.position = '';
+        touchDraggedElement.style.left = '';
+        touchDraggedElement.style.top = '';
+        touchDraggedElement.style.zIndex = '';
+        touchDraggedElement = null;
     }
 
     // Update count displays
